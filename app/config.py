@@ -8,7 +8,7 @@ from pathlib import Path
 
 # Default model. Set the AIE_MODEL environment variable to switch models.
 #   Example: export AIE_MODEL=gemini-3.5-flash
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 MODEL = os.getenv("AIE_MODEL", DEFAULT_MODEL)
 
 
