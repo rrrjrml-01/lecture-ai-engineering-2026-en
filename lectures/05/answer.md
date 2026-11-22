@@ -2,8 +2,10 @@
 
 ## Exercises
 
-- Answering model (`[model]` shown during execution):
+- Answering model (`gemini-3.6-flash` shown during execution):
 - Comparison question:
+
+For gemini-3.6-flash , the answer is quite different but the idea is the same. The sources were cited
 - Target materials (also record the difference in scope between full context and the other methods):
 
 ### Results by Method
