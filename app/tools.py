@@ -5,6 +5,7 @@ Rewriting descriptions changes whether the model uses a tool and which arguments
 """
 
 import json
+import random
 from functools import cache
 from pathlib import Path
 
@@ -79,6 +80,33 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"Key points for Lecture {lecture:02d} are not available yet. Available sessions: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+def make_quiz(lecture: int) -> str:
+    """Pick one term from the given lecture and return a review question and its answer.
+
+    Use when asked for review questions, practice questions, or a quick quiz on a session,
+    such as "Give me a review question for Lecture 2".
+    The question is built from the course glossary, so the answer is the glossary definition.
+    """
+    terms = [e for e in load_glossary() if e["lecture"] == lecture]
+    if not terms:
+        available = sorted({e["lecture"] for e in load_glossary()})
+        return json.dumps(
+            {
+                "error": f"No glossary terms found for Lecture {lecture}. "
+                f"Lectures with terms: {', '.join(str(n) for n in available)}"
+            },
+            ensure_ascii=False,
+        )
+    entry = random.choice(terms)
+    return json.dumps(
+        {
+            "question": f"What does \u201c{entry['term']}\u201d mean?",
+            "answer": entry["definition"],
+            "lecture": entry["lecture"],
+        },
+        ensure_ascii=False,
+    )
 
 def search_materials(query: str) -> str:
     """Search the main materials for Lectures 01–03 and return relevant page text, titles, and page numbers.

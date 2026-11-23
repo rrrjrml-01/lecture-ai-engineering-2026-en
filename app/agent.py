@@ -80,8 +80,7 @@ FULL_CONTEXT_PROMPT = "<materials>\n{materials}\n</materials>\n\nQuestion: {ques
 # Pass the model at runtime (so tests can substitute TestModel without calling an API)
 agent = Agent(instructions=INSTRUCTIONS)
 agent.tool_plain(tools.search_materials)
-
-# TODO(Lecture 03 exercise): create make_quiz in tools.py and register it here
+agent.tool_plain(tools.make_quiz)
 
 # Lecture 05: MCP server configuration file. Uses the same "mcpServers" format as Claude Desktop and Cursor
 MCP_CONFIG = Path(__file__).resolve().parent / "mcp_servers.json"
