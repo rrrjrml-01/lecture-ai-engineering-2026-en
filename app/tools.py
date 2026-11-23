@@ -8,10 +8,12 @@ import json
 import random
 from functools import cache
 from pathlib import Path
+from datetime import datetime
 
 from app.config import api_error_message
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+LOG_DIR = Path(__file__).resolve().parent.parent / "learning_log"
 MAX_RESULTS = 3
 
 
@@ -107,6 +109,18 @@ def make_quiz(lecture: int) -> str:
         },
         ensure_ascii=False,
     )
+
+def save_learning_log(topic: str, note: str) -> str:
+    """Save a learning record (what the learner studied and a short note) to the learning_log/ folder.
+
+    Use only when the learner asks to save or record what they learned.
+    Saving is hard to undo, so this tool requires human approval before it runs.
+    """
+    LOG_DIR.mkdir(exist_ok=True)
+    now = datetime.now()
+    path = LOG_DIR / f"{now:%Y%m%d-%H%M%S}.md"
+    path.write_text(f"# {topic}\n\n{note}\n\n(saved {now:%Y-%m-%d %H:%M})\n", encoding="utf-8")
+    return f"Saved learning log to {path.name}"
 
 def search_materials(query: str) -> str:
     """Search the main materials for Lectures 01–03 and return relevant page text, titles, and page numbers.
