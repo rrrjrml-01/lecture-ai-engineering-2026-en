@@ -21,7 +21,7 @@ from pathlib import Path
 from contextlib import nullcontext
 from time import perf_counter
 
-from pydantic_ai import Agent
+from pydantic_ai import Agent, DeferredToolRequests, DeferredToolResults, ToolDenied
 from pydantic_ai.exceptions import ModelHTTPError
 from fastmcp import Client
 from pydantic_ai.mcp import MCPToolset, StdioTransport
@@ -78,9 +78,10 @@ FULL_CONTEXT_PROMPT = "<materials>\n{materials}\n</materials>\n\nQuestion: {ques
 
 
 # Pass the model at runtime (so tests can substitute TestModel without calling an API)
-agent = Agent(instructions=INSTRUCTIONS)
+agent = Agent(instructions=INSTRUCTIONS, output_type=[str, DeferredToolRequests])
 agent.tool_plain(tools.search_materials)
 agent.tool_plain(tools.make_quiz)
+agent.tool_plain(tools.save_learning_log, requires_approval=True)
 
 # Lecture 05: MCP server configuration file. Uses the same "mcpServers" format as Claude Desktop and Cursor
 MCP_CONFIG = Path(__file__).resolve().parent / "mcp_servers.json"
@@ -175,6 +176,22 @@ def print_trace(result, elapsed_seconds: float | None = None) -> None:
     cost = f"${usage.cost:.6f} USD" if usage.cost is not None else "Unavailable"
     print(f"[cost] Estimated generation API cost: {cost} (excludes embedding and index construction)")
 
+def resolve_approvals(target: Agent, result):
+    """Ask the user to approve tool calls that need approval, then continue the run."""
+    while isinstance(result.output, DeferredToolRequests):
+        approvals = DeferredToolResults()
+        for call in result.output.approvals:
+            print(f"\n[approval needed] {call.tool_name}({call.args})")
+            answer = input("Do you want to save this? (y/n): ").strip().lower()
+            approvals.approvals[call.tool_call_id] = (
+                True if answer == "y" else ToolDenied("The user declined.")
+            )
+        result = target.run_sync(
+            message_history=result.all_messages(),
+            deferred_tool_results=approvals,
+            model=build_model(),
+        )
+    return result
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ask the learning support agent a question")
@@ -218,6 +235,7 @@ def main() -> None:
                 )
             else:
                 result = target.run_sync(args.question, model=build_model())
+                result = resolve_approvals(target, result)
         except ModelHTTPError as e:
             print(api_error_message(e.status_code, str(e.body)[:200]))
             raise SystemExit(1)
